@@ -1,56 +1,102 @@
 package com.example.mviexampleappprj.repository
 
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MediatorLiveData
-import com.example.mviexampleappprj.util.*
-import com.example.mviexampleappprj.util.Constants.Companion.TESTING_NETWORK_DELAY
+
+import com.example.mviexampleappprj.util.CacheResponseHandler
+import com.example.mviexampleappprj.util.DataState
+import com.example.mviexampleappprj.util.ApiResult.*
+import com.example.mviexampleappprj.util.ErrorHandling.Companion.NETWORK_ERROR
+import com.example.mviexampleappprj.util.ErrorHandling.Companion.UNKNOWN_ERROR
+import com.example.mviexampleappprj.util.StateEvent
+import com.example.mviexampleappprj.util.UIComponentType
 import kotlinx.coroutines.*
-import kotlinx.coroutines.Dispatchers.IO
-import kotlinx.coroutines.Dispatchers.Main
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
 
-@InternalCoroutinesApi
-abstract class NetworkBoundResource<ResponseObject, ViewStateType> {
+@FlowPreview
+abstract class NetworkBoundResource<NetworkObj, CacheObj, ViewState>
+constructor(
+        private val dispatcher: CoroutineDispatcher,
+        private val stateEvent: StateEvent,
+        private val apiCall: suspend () -> NetworkObj?,
+        private val cacheCall: suspend () -> CacheObj?
+)
+{
 
-    protected val result = MediatorLiveData<DataState<ViewStateType>>()
+    private val TAG: String = "AppDebug"
 
-    init {
-        result.value = DataState.loading(true)
-        GlobalScope.launch(IO){
-            delay(TESTING_NETWORK_DELAY)
-            withContext(Main){
-                val apiResponse = createCall()
-                result.addSource(apiResponse) { response ->
-                    result.removeSource(apiResponse)
-                    handleNetworkCall(response)
+    val result: Flow<DataState<ViewState>> = flow {
+
+        // ****** STEP 1: VIEW CACHE ******
+        emit(returnCache(markJobComplete = false))
+
+        // ****** STEP 2: MAKE NETWORK CALL, SAVE RESULT TO CACHE ******
+        val apiResult =
+                safeApiCall(dispatcher){apiCall.invoke()}
+
+        when(apiResult){
+            is GenericError -> {
+                emit(
+                        buildError<ViewState>(
+                                apiResult.errorMessage?.let { it }?: UNKNOWN_ERROR,
+                                UIComponentType.Dialog(),
+                                stateEvent
+                        )
+                )
+            }
+
+            is NetworkError -> {
+                emit(
+                        buildError<ViewState>(
+                                NETWORK_ERROR,
+                                UIComponentType.Dialog(),
+                                stateEvent
+                        )
+                )
+            }
+
+            is Success -> {
+                if(apiResult.value == null){
+                    emit(
+                            buildError<ViewState>(
+                                    UNKNOWN_ERROR,
+                                    UIComponentType.Dialog(),
+                                    stateEvent
+                            )
+                    )
+                }
+                else{
+                    updateCache(apiResult.value as NetworkObj)
                 }
             }
         }
+
+        // ****** STEP 3: VIEW CACHE and MARK JOB COMPLETED ******
+        emit(returnCache(markJobComplete = true))
     }
 
-    private fun handleNetworkCall(response: GenericApiResponse<ResponseObject>){
+    private suspend fun returnCache(markJobComplete: Boolean): DataState<ViewState> {
 
-        when(response){
-            is ApiSuccessResponse ->{
-                handleApiSuccessResponse(response)
-            }
-            is ApiErrorResponse ->{
-                println("DEBUG: NetworkBoundResource: ${response.errorMessage}")
-                onReturnError(response.errorMessage)
-            }
-            is ApiEmptyResponse ->{
-                println("DEBUG: NetworkBoundResource: Request returned NOTHING (HTTP 204)")
-                onReturnError("HTTP 204. Returned NOTHING.")
-            }
+        val cacheResult = safeCacheCall(dispatcher){cacheCall.invoke()}
+
+        var jobCompleteMarker: StateEvent? = null
+        if(markJobComplete){
+            jobCompleteMarker = stateEvent
         }
+
+        return object: CacheResponseHandler<ViewState, CacheObj>(
+                response = cacheResult,
+                stateEvent = jobCompleteMarker
+        ) {
+            override suspend fun handleSuccess(resultObj: CacheObj): DataState<ViewState> {
+                return handleCacheSuccess(resultObj)
+            }
+        }.getResult()
+
     }
 
-    private fun onReturnError(message: String){
-        result.value = DataState.error(message)
-    }
+    abstract suspend fun updateCache(networkObject: NetworkObj)
 
-    abstract fun handleApiSuccessResponse(response: ApiSuccessResponse<ResponseObject>)
+    abstract fun handleCacheSuccess(resultObj: CacheObj): DataState<ViewState> // make sure to return null for stateEvent
 
-    abstract fun createCall(): LiveData<GenericApiResponse<ResponseObject>>
 
-    fun asLiveData() = result as LiveData<DataState<ViewStateType>>
 }

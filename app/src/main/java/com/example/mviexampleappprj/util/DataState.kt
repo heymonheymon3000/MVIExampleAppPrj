@@ -1,38 +1,40 @@
 package com.example.mviexampleappprj.util
 
 data class DataState<T>(
-    var message: Event<String>? = null,
-    var loading: Boolean = false,
-    var data: Event<T>? = null
+        var stateMessage: StateMessage? = null,
+        var data: T? = null,
+        var stateEvent: StateEvent? = null
 ) {
+
     companion object {
 
-        fun <T> error(message: String): DataState<T> {
+        fun <T> error(
+                response: Response,
+                stateEvent: StateEvent?
+        ): DataState<T> {
             return DataState(
-                message = Event(message),
-                loading = false,
-                data = null
+                    stateMessage = StateMessage(
+                            response
+                    ),
+                    data = null,
+                    stateEvent = stateEvent
             )
         }
 
-        fun <T> loading(isLoading: Boolean): DataState<T> {
+        fun <T> data(
+                response: Response?,
+                data: T? = null,
+                stateEvent: StateEvent?
+        ): DataState<T> {
             return DataState(
-                message = null,
-                loading = isLoading,
-                data = null
+                    stateMessage = response?.let {
+                        StateMessage(
+                                it
+                        )
+                    },
+                    data = data,
+                    stateEvent = stateEvent
             )
         }
-
-        fun <T> data(message: String? = null, data: T? = null): DataState<T> {
-            return DataState(
-                message = Event.messageEvent(message),
-                loading = false,
-                data = Event.dataEvent(data)
-            )
-        }
-    }
-
-    override fun toString(): String {
-        return "DataState(message=$message, loading=$loading, data=$data)"
     }
 }

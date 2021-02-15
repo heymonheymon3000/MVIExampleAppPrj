@@ -2,6 +2,7 @@ package com.example.mviexampleappprj.ui.main
 
 import android.content.Context
 import android.os.Bundle
+import android.util.Log
 import android.view.*
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Observer
@@ -11,7 +12,7 @@ import com.bumptech.glide.Glide
 import com.example.mviexampleappprj.R
 import com.example.mviexampleappprj.model.BlogPost
 import com.example.mviexampleappprj.model.User
-import com.example.mviexampleappprj.ui.DataStateListener
+import com.example.mviexampleappprj.ui.UICommunicationListener
 import com.example.mviexampleappprj.ui.main.state.MainStateEvent.*
 import com.example.mviexampleappprj.util.TopSpacingItemDecoration
 import kotlinx.android.synthetic.main.fragment_main.*
@@ -27,8 +28,9 @@ class MainFragment : Fragment(), BlogListAdapter.Interaction {
     }
 
     private lateinit var viewModel: MainViewModel
-    private lateinit var dataStateHandler: DataStateListener
     private lateinit var blogListAdapter: BlogListAdapter
+
+    lateinit var uiCommunicationListener: UICommunicationListener
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -47,18 +49,23 @@ class MainFragment : Fragment(), BlogListAdapter.Interaction {
             ViewModelProvider(this).get(MainViewModel::class.java)
         }?: throw Exception("Invalid activity")
 
+        setupChannel()
+
         subscribeObservers()
         initRecyclerView()
     }
 
+    private fun setupChannel() = viewModel.setupChannel()
+
+
     override fun onAttach(context: Context) {
         super.onAttach(context)
-
-        try {
-            dataStateHandler = context as DataStateListener
-        } catch (e: ClassCastException) {
-            Timber.d("$context must implement DataStateListener")
+        try{
+            uiCommunicationListener = context as UICommunicationListener
+        }catch(e: ClassCastException){
+            Log.e("MainFragment", "$context must implement UICommunicationListener" )
         }
+
     }
 
     override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
@@ -88,34 +95,6 @@ class MainFragment : Fragment(), BlogListAdapter.Interaction {
 
     @InternalCoroutinesApi
     private fun subscribeObservers(){
-        viewModel.dataState.observe(viewLifecycleOwner, Observer { dataState ->
-
-            // Handle Loading and Message
-            dataStateHandler.onDataStateChange(dataState)
-
-            // handle Data<T>
-            dataState.data?.let{ event ->
-                event.peekContent().let{ mainViewState ->
-
-                    println("DEBUG: DataState: $mainViewState")
-
-                    var blogs: List<BlogPost> = ArrayList<BlogPost>()
-                    if (mainViewState != null) {
-                        mainViewState.blogPosts?.let{
-                            // set BlogPosts data
-                            viewModel.setBlogListData(it)
-                        }
-                    }
-
-                    if (mainViewState != null) {
-                        mainViewState.user?.let{
-                            // set User data
-                           viewModel.setUser(it)
-                        }
-                    }
-                }
-            }
-        })
 
         viewModel.viewState.observe(viewLifecycleOwner, Observer {viewState ->
             viewState.blogPosts?.let {blogPosts ->

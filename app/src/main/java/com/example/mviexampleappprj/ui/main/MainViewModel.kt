@@ -3,96 +3,92 @@ package com.example.mviexampleappprj.ui.main
 import androidx.lifecycle.*
 import com.example.mviexampleappprj.model.BlogPost
 import com.example.mviexampleappprj.model.User
-import com.example.mviexampleappprj.repository.main.MainRepository
+import com.example.mviexampleappprj.repository.main.MainRepositoryImpl
 import com.example.mviexampleappprj.ui.main.state.MainStateEvent
 import com.example.mviexampleappprj.ui.main.state.MainStateEvent.*
 import com.example.mviexampleappprj.ui.main.state.MainViewState
-import com.example.mviexampleappprj.util.AbsentLiveData
-import com.example.mviexampleappprj.util.DataState
-import kotlinx.coroutines.InternalCoroutinesApi
+import com.example.mviexampleappprj.util.*
+import com.example.mviexampleappprj.util.ErrorHandling.Companion.INVALID_STATE_EVENT
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
 
 class MainViewModel : ViewModel(){
 
-    private val _stateEvent: MutableLiveData<MainStateEvent> = MutableLiveData()
     private val _viewState: MutableLiveData<MainViewState> = MutableLiveData()
 
     val viewState: LiveData<MainViewState>
         get() = _viewState
 
-    @InternalCoroutinesApi
-    val dataState: LiveData<DataState<MainViewState>> = Transformations
-            .switchMap(_stateEvent){stateEvent ->
-                stateEvent?.let {
-                    handleStateEvent(stateEvent)
-                }
-            }
+    val dataChannelManager: DataChannelManager<MainViewState>
+            = object: DataChannelManager<MainViewState>(){
 
+        override fun handleNewData(data: MainViewState) {
+            this@MainViewModel.handleNewData(data)
+        }
+    }
 
+    fun handleNewData(data: MainViewState) {
+        data.user?.let { user ->
+            setUser(user)
+        }
 
-    @InternalCoroutinesApi
-    private fun handleStateEvent(stateEvent: MainStateEvent): LiveData<DataState<MainViewState>>{
-        println("DEBUG: New StateEvent detected: $stateEvent")
-        return when(stateEvent){
-//            is InitEvent -> {
-//                return object: LiveData<DataState<MainViewState>>(){
-//                    override fun onActive() {
-//                        super.onActive()
-//
-//                        val blogPosts: ArrayList<BlogPost> = ArrayList()
-//                        blogPosts.add(
-//                                BlogPost(
-//                                        pk = 0,
-//                                        title = "Vancouver PNE 2019",
-//                                        body = "Here is Jess and I at the Vancouver PNE. We ate a lot of food.",
-//                                        image = "https://cdn.open-api.xyz/open-api-static/static-blog-images/image8.jpg"
-//                                )
-//                        )
-//                        blogPosts.add(
-//                                BlogPost(
-//                                        pk = 1,
-//                                        title = "Ready for a Walk",
-//                                        body = "Here I am at the park with my dogs Kiba and Maizy. Maizy is the smaller one and Kiba is the larger one.",
-//                                        image = "https://cdn.open-api.xyz/open-api-static/static-blog-images/image2.jpg"
-//                                )
-//                        )
-//
-//                        val user = User(
-//                                email = "mitch@tabian.ca",
-//                                username = "mitch",
-//                                image = "https://cdn.open-api.xyz/open-api-static/static-random-images/logo_1080_1080.png"
-//                        )
-//
-//                        value = DataState.data(
-//                                data = MainViewState(user =  user, blogPosts = blogPosts)
-//                        )
-//
-//                    }
-//                }
-//            }
+        data.blogPosts?.let { blogPosts ->
+            setBlogListData(blogPosts)
+        }
+    }
 
+    fun setStateEvent(stateEvent: StateEvent) {
+        val job: Flow<DataState<MainViewState>> = when (stateEvent) {
             is GetBlogPostsEvent -> {
-                MainRepository.getBlogPosts()
+                MainRepositoryImpl.getBlogPosts(stateEvent)
             }
 
             is GetUserEvent -> {
-                MainRepository.getUser(stateEvent.userId)
+                MainRepositoryImpl.getUser(stateEvent, stateEvent.userId)
             }
 
             is ClearEvent -> {
-                val result = MediatorLiveData<DataState<MainViewState>>()
-                result.value = DataState.data(
-                        data = MainViewState(user =  User(null, null, null), blogPosts = ArrayList())
-                )
-                return result
+                flow {
+                    emit(
+                        DataState.data(
+                                data = MainViewState(
+                                        user = User(),
+                                        blogPosts = ArrayList<BlogPost>()
+                                ),
+                                stateEvent = stateEvent,
+                                response = null
+                            )
+                    )
+                }
             }
 
-            is None -> {
-                AbsentLiveData.create()
-            }
             else -> {
-                AbsentLiveData.create()
+                flow {
+                    emit(
+                            DataState.error<MainViewState>(
+                                    response = Response(
+                                            message = INVALID_STATE_EVENT,
+                                            uiComponentType = UIComponentType.None(),
+                                            messageType = MessageType.Error()
+                                    ),
+                                    stateEvent = stateEvent
+                            )
+                    )
+                }
             }
         }
+        launchJob(stateEvent, job)
+    }
+
+    val numActiveJobs: LiveData<Int>
+            = dataChannelManager.numActiveJobs
+
+    val stateMessage: LiveData<StateMessage?>
+        get() = dataChannelManager.messageStack.stateMessage
+
+    // FOR DEBUGGING
+    fun getMessageStackSize(): Int{
+        return dataChannelManager.messageStack.size
     }
 
     fun setBlogListData(blogPosts: List<BlogPost>){
@@ -107,119 +103,49 @@ class MainViewModel : ViewModel(){
         _viewState.value = update
     }
 
+    fun isJobAlreadyActive(stateEvent: StateEvent): Boolean {
+        return dataChannelManager.isJobAlreadyActive(stateEvent)
+    }
+
+    fun setupChannel() = dataChannelManager.setupChannel()
+
+
     private fun getCurrentViewStateOrNew(): MainViewState {
         return viewState.value?.let {
             it
         }?: MainViewState()
     }
 
-    fun setStateEvent(event: MainStateEvent){
-        val state: MainStateEvent = event
-        _stateEvent.value = state
+    fun launchJob(
+            stateEvent: StateEvent,
+            jobFunction: Flow<DataState<MainViewState>>
+    ){
+        dataChannelManager.launchJob(stateEvent, jobFunction)
+    }
+
+    fun setViewState(mainViewState: MainViewState){
+        _viewState.value = mainViewState
+    }
+
+    fun clearStateMessage(index: Int = 0){
+        dataChannelManager.clearStateMessage(index)
+    }
+
+    fun areAnyJobsActive(): Boolean{
+        return dataChannelManager.numActiveJobs.value?.let {
+            it > 0
+        }?: false
+    }
+
+    private fun cancelActiveJobs(){
+        if(areAnyJobsActive()){
+            dataChannelManager.cancelJobs()
+        }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        cancelActiveJobs()
     }
 }
 
-//class MainViewModel: ViewModel() {
-//
-//    // the state event triggered
-//    private val _stateEvent: MutableLiveData<MainStateEvent> = MutableLiveData()
-//
-//    // data that is being returned to the view
-//    private val _viewState: MutableLiveData<MainViewState> = MutableLiveData()
-//
-//
-//    val viewState: LiveData<MainViewState>
-//        get() = _viewState
-//
-//    val dataState: LiveData<DataState<MainViewState>> = Transformations
-//        .switchMap(_stateEvent) { stateEvent ->
-//            stateEvent?.let {
-//                handleStateEvent(it)
-//            }
-//        }
-//
-//
-//    private fun handleStateEvent(stateEvent: MainStateEvent): LiveData<DataState<MainViewState>> {
-//        return when (stateEvent) {
-//            is None -> {
-//                AbsentLiveData.create()
-//            }
-//
-//            is GetUserEvent -> {
-//                MainRepository.getUser(stateEvent.userId)
-//            }
-//
-//            is GetBlogPostsEvent -> {
-//                MainRepository.getBlogPosts()
-//            }
-//
-//            is ClearEvent -> {
-//                val result = MediatorLiveData<DataState<MainViewState>>()
-//                result.value = DataState.data(
-//                    data = MainViewState(user =  User(null, null, null), blogPosts = ArrayList())
-//                )
-//                return result
-//            }
-//        }
-//    }
-//
-//    fun setBlogListData(blogPosts: List<BlogPost>) {
-//        val update = getCurrentViewStateOrNew()
-//        update.blogPosts = blogPosts
-//        _viewState.value = update
-//    }
-//
-//    fun setUserData(user: User) {
-//        val update = getCurrentViewStateOrNew()
-//        update.user = user
-//        _viewState.value = update
-//    }
-//
-//    fun setInitData(user: User, blogPosts: List<BlogPost>) {
-//        val update = getCurrentViewStateOrNew()
-//        update.user = user
-//        update.blogPosts = blogPosts
-//        _viewState.value = update
-//    }
-//
-//    private fun getCurrentViewStateOrNew(): MainViewState {
-//        return viewState.value ?: MainViewState()
-//    }
-//
-//    fun setStateEvent(event: MainStateEvent) {
-//        _stateEvent.value = event
-//    }
-//}
-
-//                return object: LiveData<DataState<MainViewState>>(){
-//                    override fun onActive() {
-//                        super.onActive()
-//                        val blogList: ArrayList<BlogPost> = ArrayList()
-//                        blogList.add(
-//                            BlogPost(
-//                                pk = 0,
-//                                title = "Vancouver PNE 2019",
-//                                body = "Here is Jess and I at the Vancouver PNE. We ate a lot of food.",
-//                                image = "https://cdn.open-api.xyz/open-api-static/static-blog-images/image8.jpg"
-//                            )
-//                        )
-//                        blogList.add(
-//                            BlogPost(
-//                                pk = 1,
-//                                title = "Ready for a Walk",
-//                                body = "Here I am at the park with my dogs Kiba and Maizy. Maizy is the smaller one and Kiba is the larger one.",
-//                                image = "https://cdn.open-api.xyz/open-api-static/static-blog-images/image2.jpg"
-//                            )
-//                        )
-//
-//                        val user = User(
-//                            email = "mitch@tabian.ca",
-//                            username = "mitch",
-//                            image = "https://cdn.open-api.xyz/open-api-static/static-random-images/logo_1080_1080.png"
-//                        )
-//
-//                        value = DataState.data(message = null,
-//                            data = MainViewState(blogPosts = blogList, user = user)
-//                        )
-//                    }
-//                }
