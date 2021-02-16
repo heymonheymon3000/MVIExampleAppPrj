@@ -2,6 +2,7 @@ package com.example.mviexampleappprj.ui.main
 
 import android.os.Bundle
 import android.view.*
+import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.bumptech.glide.Glide
 import com.example.mviexampleappprj.R
@@ -12,12 +13,15 @@ import com.example.mviexampleappprj.util.TopSpacingItemDecoration
 import kotlinx.android.synthetic.main.fragment_main.*
 import kotlinx.coroutines.*
 import timber.log.Timber
+import javax.inject.Inject
 
 @FlowPreview
 @ExperimentalCoroutinesApi
-class MainFragment :
-    BaseMainFragment(R.layout.fragment_main),
-    BlogListAdapter.Interaction {
+class MainFragment
+@Inject
+constructor(
+        viewModelFactory: ViewModelProvider.Factory
+): BaseMainFragment(R.layout.fragment_main, viewModelFactory), BlogListAdapter.Interaction {
 
     private lateinit var blogListAdapter: BlogListAdapter
 

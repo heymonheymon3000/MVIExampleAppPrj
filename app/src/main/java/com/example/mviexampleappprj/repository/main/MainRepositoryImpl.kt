@@ -1,6 +1,6 @@
 package com.example.mviexampleappprj.repository.main
 
-import com.example.mviexampleappprj.api.RetrofitBuilder
+import com.example.mviexampleappprj.api.ApiService
 import com.example.mviexampleappprj.model.BlogPost
 import com.example.mviexampleappprj.model.User
 import com.example.mviexampleappprj.repository.safeApiCall
@@ -9,15 +9,20 @@ import com.example.mviexampleappprj.util.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import javax.inject.Inject
 
 @FlowPreview
-object MainRepositoryImpl : MainRepository{
+class MainRepositoryImpl
+@Inject
+constructor(
+    val apiMainService: ApiService
+): MainRepository{
     override fun getBlogPosts(
             stateEvent: StateEvent):
             Flow<DataState<MainViewState>> = flow {
 
         val apiResult = safeApiCall(Dispatchers.IO) {
-            RetrofitBuilder.apiService.getBlogPosts()
+            apiMainService.getBlogPosts()
         }
 
         emit(
@@ -44,7 +49,7 @@ object MainRepositoryImpl : MainRepository{
         Flow<DataState<MainViewState>> = flow {
 
             val apiResult = safeApiCall(Dispatchers.IO) {
-                RetrofitBuilder.apiService.getUser(userId)
+                apiMainService.getUser(userId)
             }
 
             emit(

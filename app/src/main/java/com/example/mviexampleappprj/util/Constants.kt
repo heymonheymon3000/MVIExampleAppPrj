@@ -3,7 +3,8 @@ package com.example.mviexampleappprj.util
 class Constants {
     companion object {
 
-        const val BASE_URL = "https://open-api.xyz/api/"
+//        const val BASE_URL = "https://open-api.xyz/api/"
+        const val BASE_URL = "https://open-api.xyz/"
         const val PASSWORD_RESET_URL: String = "https://open-api.xyz/password_reset/"
 
 

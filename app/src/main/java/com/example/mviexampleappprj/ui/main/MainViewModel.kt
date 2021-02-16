@@ -2,7 +2,7 @@ package com.example.mviexampleappprj.ui.main
 
 import com.example.mviexampleappprj.model.BlogPost
 import com.example.mviexampleappprj.model.User
-import com.example.mviexampleappprj.repository.main.MainRepositoryImpl
+import com.example.mviexampleappprj.repository.main.MainRepository
 import com.example.mviexampleappprj.ui.main.state.MainStateEvent.*
 import com.example.mviexampleappprj.ui.main.state.MainViewState
 import com.example.mviexampleappprj.util.*
@@ -11,10 +11,15 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import javax.inject.Inject
 
 @FlowPreview
 @ExperimentalCoroutinesApi
-class MainViewModel :
+class MainViewModel
+@Inject
+constructor(
+    val mainRepository: MainRepository
+) :
     BaseViewModel<MainViewState>() {
 
     @FlowPreview
@@ -23,11 +28,11 @@ class MainViewModel :
         val job: Flow<DataState<MainViewState>> = when (stateEvent) {
 
             is GetBlogPostsEvent -> {
-                MainRepositoryImpl.getBlogPosts(stateEvent)
+                mainRepository.getBlogPosts(stateEvent)
             }
 
             is GetUserEvent -> {
-                MainRepositoryImpl.getUser(stateEvent, stateEvent.userId)
+                mainRepository.getUser(stateEvent, stateEvent.userId)
             }
 
             is ClearEvent -> {

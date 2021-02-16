@@ -10,6 +10,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import timber.log.Timber
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.ViewModelProvider
 import com.example.mviexampleappprj.util.StateMessageCallback
 
 @FlowPreview
@@ -17,17 +18,21 @@ import com.example.mviexampleappprj.util.StateMessageCallback
 abstract class BaseMainFragment
 constructor(
     @LayoutRes
-    private val layoutRes: Int
+    private val layoutRes: Int,
+    private val viewModelFactory: ViewModelProvider.Factory
 ): Fragment(layoutRes){
 
     lateinit var uiCommunicationListener: UICommunicationListener
 
-    val viewModel: MainViewModel by viewModels()
+
+    val viewModel: MainViewModel by viewModels{
+        viewModelFactory
+    }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         setupChannel()
-        subscribeObservers()
+//        subscribeObservers()
     }
 
     override fun onAttach(context: Context) {
@@ -39,24 +44,24 @@ constructor(
         }
     }
 
-    private fun subscribeObservers() {
-        viewModel.numActiveJobs.observe(viewLifecycleOwner, {
-            uiCommunicationListener.displayProgressBar(viewModel.areAnyJobsActive())
-        })
-
-        viewModel.stateMessage.observe(viewLifecycleOwner, { stateMessage ->
-            stateMessage?.let {
-                uiCommunicationListener.onResponseReceived(
-                        response = it.response,
-                        stateMessageCallback = object : StateMessageCallback {
-                            override fun removeMessageFromStack() {
-                                viewModel.clearStateMessage()
-                            }
-                        }
-                )
-            }
-        })
-    }
+//    private fun subscribeObservers() {
+//        viewModel.numActiveJobs.observe(viewLifecycleOwner, {
+//            uiCommunicationListener.displayProgressBar(viewModel.areAnyJobsActive())
+//        })
+//
+//        viewModel.stateMessage.observe(viewLifecycleOwner, { stateMessage ->
+//            stateMessage?.let {
+//                uiCommunicationListener.onResponseReceived(
+//                        response = it.response,
+//                        stateMessageCallback = object : StateMessageCallback {
+//                            override fun removeMessageFromStack() {
+//                                viewModel.clearStateMessage()
+//                            }
+//                        }
+//                )
+//            }
+//        })
+//    }
 
     private fun setupChannel() = viewModel.setupChannel()
 }

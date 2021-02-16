@@ -4,6 +4,7 @@ import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import com.afollestad.materialdialogs.MaterialDialog
 import com.afollestad.materialdialogs.callbacks.onDismiss
+import com.example.mviexampleappprj.BaseApplication
 import com.example.mviexampleappprj.R
 import com.example.mviexampleappprj.util.*
 
@@ -15,7 +16,12 @@ abstract class BaseActivity:
 
     abstract override fun displayProgressBar(isLoading: Boolean)
 
+    abstract fun inject()
+
+
     override fun onCreate(savedInstanceState: Bundle?) {
+        (application as BaseApplication).appComponent
+                .inject(this)
         super.onCreate(savedInstanceState)
     }
 
