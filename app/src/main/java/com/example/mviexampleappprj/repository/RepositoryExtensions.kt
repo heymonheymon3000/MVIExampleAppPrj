@@ -5,13 +5,12 @@ import com.example.mviexampleappprj.util.*
 import com.example.mviexampleappprj.util.ApiResult.*
 import com.example.mviexampleappprj.util.Constants.Companion.CACHE_TIMEOUT
 import com.example.mviexampleappprj.util.Constants.Companion.NETWORK_TIMEOUT
+import com.example.mviexampleappprj.util.Constants.Companion.TESTING_CACHE_DELAY
+import com.example.mviexampleappprj.util.Constants.Companion.TESTING_NETWORK_DELAY
 import com.example.mviexampleappprj.util.ErrorHandling.Companion.CACHE_ERROR_TIMEOUT
 import com.example.mviexampleappprj.util.ErrorHandling.Companion.NETWORK_ERROR_TIMEOUT
 import com.example.mviexampleappprj.util.ErrorHandling.Companion.UNKNOWN_ERROR
-import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.TimeoutCancellationException
-import kotlinx.coroutines.withContext
-import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.*
 import retrofit2.HttpException
 import java.io.IOException
 
@@ -29,6 +28,7 @@ suspend fun <T> safeApiCall(
         try {
             // throws TimeoutCancellationException
             withTimeout(NETWORK_TIMEOUT){
+                delay(TESTING_NETWORK_DELAY)
                 Success(apiCall.invoke())
             }
         } catch (throwable: Throwable) {
@@ -68,6 +68,7 @@ suspend fun <T> safeCacheCall(
         try {
             // throws TimeoutCancellationException
             withTimeout(CACHE_TIMEOUT){
+                delay(TESTING_CACHE_DELAY)
                 CacheResult.Success(cacheCall.invoke())
             }
         } catch (throwable: Throwable) {

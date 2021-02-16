@@ -15,8 +15,6 @@ import kotlinx.coroutines.flow.onEach
 @ExperimentalCoroutinesApi
 abstract class DataChannelManager<ViewState> {
 
-    private val TAG: String = "AppDebug"
-
     private val _activeStateEvents: HashSet<String> = HashSet()
     private val _numActiveJobs: MutableLiveData<Int> = MutableLiveData()
     private var channelScope: CoroutineScope? = null
@@ -92,7 +90,7 @@ abstract class DataChannelManager<ViewState> {
         return _activeStateEvents.contains(stateEvent.toString())
     }
 
-    fun getChannelScope(): CoroutineScope {
+    private fun getChannelScope(): CoroutineScope {
         return channelScope?: setupNewChannelScope(CoroutineScope(IO))
     }
 

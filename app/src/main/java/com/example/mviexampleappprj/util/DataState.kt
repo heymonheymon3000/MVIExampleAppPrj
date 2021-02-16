@@ -13,11 +13,11 @@ data class DataState<T>(
                 stateEvent: StateEvent?
         ): DataState<T> {
             return DataState(
-                    stateMessage = StateMessage(
-                            response
-                    ),
-                    data = null,
-                    stateEvent = stateEvent
+                stateMessage = StateMessage(
+                        response
+                ),
+                data = null,
+                stateEvent = stateEvent
             )
         }
 
@@ -27,13 +27,13 @@ data class DataState<T>(
                 stateEvent: StateEvent?
         ): DataState<T> {
             return DataState(
-                    stateMessage = response?.let {
-                        StateMessage(
-                                it
-                        )
-                    },
-                    data = data,
-                    stateEvent = stateEvent
+                stateMessage = response?.let {
+                    StateMessage(
+                            it
+                    )
+                },
+                data = data,
+                stateEvent = stateEvent
             )
         }
     }

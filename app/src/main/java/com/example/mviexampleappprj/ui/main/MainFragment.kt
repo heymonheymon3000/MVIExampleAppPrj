@@ -1,71 +1,31 @@
 package com.example.mviexampleappprj.ui.main
 
-import android.content.Context
 import android.os.Bundle
-import android.util.Log
 import android.view.*
-import androidx.fragment.app.Fragment
-import androidx.lifecycle.Observer
-import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.bumptech.glide.Glide
 import com.example.mviexampleappprj.R
 import com.example.mviexampleappprj.model.BlogPost
 import com.example.mviexampleappprj.model.User
-import com.example.mviexampleappprj.ui.UICommunicationListener
 import com.example.mviexampleappprj.ui.main.state.MainStateEvent.*
 import com.example.mviexampleappprj.util.TopSpacingItemDecoration
 import kotlinx.android.synthetic.main.fragment_main.*
 import kotlinx.coroutines.*
 import timber.log.Timber
-import java.lang.ClassCastException
 
-class MainFragment : Fragment(), BlogListAdapter.Interaction {
+@FlowPreview
+@ExperimentalCoroutinesApi
+class MainFragment :
+    BaseMainFragment(R.layout.fragment_main),
+    BlogListAdapter.Interaction {
 
-    override fun onItemSelected(position: Int, item: BlogPost) {
-        Timber.d("Clicked $position")
-        Timber.d("Clicked $item")
-    }
-
-    private lateinit var viewModel: MainViewModel
     private lateinit var blogListAdapter: BlogListAdapter
 
-    lateinit var uiCommunicationListener: UICommunicationListener
-
-    override fun onCreateView(
-        inflater: LayoutInflater,
-        container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View? {
-        return inflater.inflate(R.layout.fragment_main, container, false)
-    }
-
-    @InternalCoroutinesApi
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         setHasOptionsMenu(true)
-
-        viewModel = activity?.run {
-            ViewModelProvider(this).get(MainViewModel::class.java)
-        }?: throw Exception("Invalid activity")
-
-        setupChannel()
-
-        subscribeObservers()
         initRecyclerView()
-    }
-
-    private fun setupChannel() = viewModel.setupChannel()
-
-
-    override fun onAttach(context: Context) {
-        super.onAttach(context)
-        try{
-            uiCommunicationListener = context as UICommunicationListener
-        }catch(e: ClassCastException){
-            Log.e("MainFragment", "$context must implement UICommunicationListener" )
-        }
-
+        subscribeObservers()
     }
 
     override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
@@ -83,20 +43,14 @@ class MainFragment : Fragment(), BlogListAdapter.Interaction {
         return super.onOptionsItemSelected(item)
     }
 
-    private fun initRecyclerView() {
-        recycler_view.apply {
-            layoutManager = LinearLayoutManager(activity)
-            val topSpacingItemDecoration = TopSpacingItemDecoration(30)
-            addItemDecoration(topSpacingItemDecoration)
-            blogListAdapter = BlogListAdapter(this@MainFragment)
-            adapter = blogListAdapter
-        }
+    override fun onItemSelected(position: Int, item: BlogPost) {
+        Timber.d("Clicked $position")
+        Timber.d("Clicked $item")
     }
 
-    @InternalCoroutinesApi
     private fun subscribeObservers(){
 
-        viewModel.viewState.observe(viewLifecycleOwner, Observer {viewState ->
+        viewModel.viewState.observe(viewLifecycleOwner, { viewState ->
             viewState.blogPosts?.let {blogPosts ->
                 // set BlogPosts to RecyclerView
                 println("DEBUG: Setting blog posts to RecyclerView: $blogPosts")
@@ -106,9 +60,19 @@ class MainFragment : Fragment(), BlogListAdapter.Interaction {
             viewState.user?.let{ user ->
                 // set User data to widgets
                 println("DEBUG: Setting User data: $user")
-               setUserProperties(user)
+                setUserProperties(user)
             }
         })
+    }
+
+    private fun initRecyclerView() {
+        recycler_view.apply {
+            layoutManager = LinearLayoutManager(activity)
+            val topSpacingItemDecoration = TopSpacingItemDecoration(30)
+            addItemDecoration(topSpacingItemDecoration)
+            blogListAdapter = BlogListAdapter(this@MainFragment)
+            adapter = blogListAdapter
+        }
     }
 
     private fun setUserProperties(user: User) {

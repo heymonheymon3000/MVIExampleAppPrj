@@ -5,7 +5,7 @@ import com.example.mviexampleappprj.util.StateEvent
 sealed class MainStateEvent : StateEvent {
     class None : MainStateEvent() {
         override fun errorInfo(): String {
-            TODO("Not yet implemented")
+            return "None"
         }
 
         override fun toString(): String {
@@ -17,7 +17,7 @@ sealed class MainStateEvent : StateEvent {
         val userId: String
     ): MainStateEvent() {
         override fun errorInfo(): String {
-            TODO("Not yet implemented")
+            return "GetUserEvent"
         }
 
         override fun toString(): String {
@@ -27,7 +27,7 @@ sealed class MainStateEvent : StateEvent {
 
     class GetBlogPostsEvent : MainStateEvent() {
         override fun errorInfo(): String {
-            TODO("Not yet implemented")
+            return "InitEvent"
         }
 
         override fun toString(): String {
@@ -37,7 +37,7 @@ sealed class MainStateEvent : StateEvent {
 
     class ClearEvent: MainStateEvent() {
         override fun errorInfo(): String {
-            TODO("Not yet implemented")
+            return "ClearEvent"
         }
 
         override fun toString(): String {
@@ -47,7 +47,7 @@ sealed class MainStateEvent : StateEvent {
 
     class InitEvent: MainStateEvent() {
         override fun errorInfo(): String {
-            TODO("Not yet implemented")
+            return "InitEvent"
         }
 
         override fun toString(): String {

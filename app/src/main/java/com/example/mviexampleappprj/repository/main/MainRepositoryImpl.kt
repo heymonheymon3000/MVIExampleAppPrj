@@ -53,52 +53,14 @@ object MainRepositoryImpl : MainRepository{
                         stateEvent = stateEvent) {
                     override suspend fun handleSuccess(resultObj: User): DataState<MainViewState> {
                         return DataState.data(
-                                data = MainViewState(
-                                        user = resultObj
-                                ),
-                                stateEvent = stateEvent,
-                                response = null
+                            data = MainViewState(
+                                    user = resultObj
+                            ),
+                            stateEvent = stateEvent,
+                            response = null
                         )
                     }
                 }.getResult()
             )
     }
 }
-
-
-
-//private val returnedData = MediatorLiveData<DataState<MainViewState>>()
-//
-//@InternalCoroutinesApi
-//fun getBlogPosts(): Flow<DataState<MainViewState>> {
-//    return object: NetworkBoundResource<List<BlogPost>, MainViewState>() {
-//        override fun handleApiSuccessResponse(response: ApiSuccessResponse<List<BlogPost>>) {
-//            CoroutineScope(Main).launch {
-//                result.value = DataState.data(
-//                        data = MainViewState(blogPosts =  response.body))
-//            }
-//        }
-//
-//        override fun createCall(): LiveData<GenericApiResponse<List<BlogPost>>> {
-//            return RetrofitBuilder.apiService.getBlogPosts()
-//        }
-//    }.asLiveData()
-//}
-//
-//@InternalCoroutinesApi
-//fun getUser(userId: String): LiveData<DataState<MainViewState>> {
-//    return object: NetworkBoundResource<User, MainViewState>() {
-//        override fun handleApiSuccessResponse(response: ApiSuccessResponse<User>) {
-//            CoroutineScope(Main).launch {
-//                result.value = DataState.data(
-//                        data = MainViewState(user =  response.body)
-//                )
-//            }
-//
-//        }
-//
-//        override fun createCall(): LiveData<GenericApiResponse<User>> {
-//            return RetrofitBuilder.apiService.getUser(userId)
-//        }
-//    }.asLiveData()
-//}

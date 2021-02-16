@@ -6,6 +6,6 @@ import com.example.mviexampleappprj.util.StateEvent
 import kotlinx.coroutines.flow.Flow
 
 interface MainRepository {
-    fun getBlogPosts(stateEvent: StateEvent,): Flow<DataState<MainViewState>>
+    fun getBlogPosts(stateEvent: StateEvent): Flow<DataState<MainViewState>>
     fun getUser(stateEvent: StateEvent, userId: String): Flow<DataState<MainViewState>>
 }
