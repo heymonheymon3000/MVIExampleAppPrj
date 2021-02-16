@@ -7,12 +7,13 @@ import android.view.ViewGroup
 import androidx.recyclerview.widget.AsyncListDiffer
 import androidx.recyclerview.widget.DiffUtil
 import com.bumptech.glide.Glide
+import com.bumptech.glide.RequestManager
 import com.bumptech.glide.request.RequestOptions
 import com.example.mviexampleappprj.R
 import com.example.mviexampleappprj.model.BlogPost
 import kotlinx.android.synthetic.main.layout_blog_list_item.view.*
 
-class BlogListAdapter(private val interaction: Interaction? = null) :
+class BlogListAdapter(private val requestManager: RequestManager, private val interaction: Interaction? = null) :
     RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
     val DIFF_CALLBACK = object : DiffUtil.ItemCallback<BlogPost>() {
@@ -37,7 +38,8 @@ class BlogListAdapter(private val interaction: Interaction? = null) :
                 parent,
                 false
             ),
-            interaction
+            interaction,
+            requestManager = requestManager
         )
     }
 
@@ -60,7 +62,8 @@ class BlogListAdapter(private val interaction: Interaction? = null) :
     class BlogPostViewHolder
     constructor(
         itemView: View,
-        private val interaction: Interaction?
+        private val interaction: Interaction?,
+        val requestManager: RequestManager
     ) : RecyclerView.ViewHolder(itemView) {
 
         fun bind(item: BlogPost) = with(itemView) {
@@ -70,11 +73,10 @@ class BlogListAdapter(private val interaction: Interaction? = null) :
 
             itemView.blog_title.text = item.title
 
-            // need to shrink images b/c they are very high resolution
-            val requestOptions = RequestOptions
-                .overrideOf(1920, 1080)
-            Glide.with(itemView.context)
-                .applyDefaultRequestOptions(requestOptions)
+
+
+
+            requestManager
                 .load(item.image)
                 .into(itemView.blog_image)
         }

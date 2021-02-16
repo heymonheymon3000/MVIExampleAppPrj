@@ -5,6 +5,7 @@ import android.view.View
 import androidx.activity.viewModels
 import androidx.fragment.app.FragmentFactory
 import androidx.lifecycle.ViewModelProvider
+import com.bumptech.glide.request.RequestOptions
 import com.example.mviexampleappprj.BaseApplication
 import com.example.mviexampleappprj.R
 import com.example.mviexampleappprj.ui.BaseActivity
@@ -26,6 +27,9 @@ class MainActivity :
 
     @Inject
     lateinit var providerFactory: ViewModelProvider.Factory
+
+    @Inject
+    lateinit var providerRequestOptions: RequestOptions
 
     val viewModel: MainViewModel by viewModels {
         providerFactory
@@ -75,7 +79,7 @@ class MainActivity :
     private fun showMainFragment() {
         supportFragmentManager.beginTransaction()
             .replace(R.id.fragment_container,
-                   MainFragment(providerFactory), "MainFragment")
+                   MainFragment(providerFactory, providerRequestOptions), "MainFragment")
             .commit()
     }
 }

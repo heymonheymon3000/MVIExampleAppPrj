@@ -22,11 +22,11 @@ constructor(
         when (className) {
 
             MainFragment::class.java.name -> {
-                MainFragment(viewModelFactory)
+                MainFragment(viewModelFactory, requestOptions)
             }
 
             else -> {
-                MainFragment(viewModelFactory)
+                MainFragment(viewModelFactory, requestOptions)
             }
         }
 

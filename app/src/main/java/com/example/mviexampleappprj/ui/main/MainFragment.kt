@@ -5,6 +5,8 @@ import android.view.*
 import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.bumptech.glide.Glide
+import com.bumptech.glide.RequestManager
+import com.bumptech.glide.request.RequestOptions
 import com.example.mviexampleappprj.R
 import com.example.mviexampleappprj.model.BlogPost
 import com.example.mviexampleappprj.model.User
@@ -20,14 +22,19 @@ import javax.inject.Inject
 class MainFragment
 @Inject
 constructor(
-        viewModelFactory: ViewModelProvider.Factory
+        viewModelFactory: ViewModelProvider.Factory,
+        private val requestOptions: RequestOptions
 ): BaseMainFragment(R.layout.fragment_main, viewModelFactory), BlogListAdapter.Interaction {
 
     private lateinit var blogListAdapter: BlogListAdapter
 
+    private var requestManager: RequestManager? = null // can leak memory, must be nullable
+
+
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         setHasOptionsMenu(true)
+        setupGlide()
         initRecyclerView()
         subscribeObservers()
     }
@@ -36,6 +43,19 @@ constructor(
         super.onCreateOptionsMenu(menu, inflater)
         inflater.inflate(R.menu.main_menu, menu)
     }
+
+    private fun setupGlide(){
+        val requestOptions = RequestOptions
+                .placeholderOf(R.drawable.default_image)
+                .error(R.drawable.default_image)
+                .override(1920, 1080)
+
+        activity?.let {
+            requestManager = Glide.with(it)
+                    .applyDefaultRequestOptions(requestOptions)
+        }
+    }
+
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         when(item.itemId) {
@@ -74,7 +94,9 @@ constructor(
             layoutManager = LinearLayoutManager(activity)
             val topSpacingItemDecoration = TopSpacingItemDecoration(30)
             addItemDecoration(topSpacingItemDecoration)
-            blogListAdapter = BlogListAdapter(this@MainFragment)
+            blogListAdapter = BlogListAdapter(
+                    requestManager as RequestManager,
+                    this@MainFragment)
             adapter = blogListAdapter
         }
     }
